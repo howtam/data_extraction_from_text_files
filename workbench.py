@@ -10,7 +10,7 @@ class Workbench:
         self.flowChart = flowChart
         self.lastState = '__start__'
         self.lastLevel = 0
-        self.outputLevel = max(list(extractAttrs.keys()))
+
         self.outputItems = []
         self.lineNum = 0
         self.regExCompile = {}
@@ -26,6 +26,7 @@ class Workbench:
                 self.extractAttrs[lvl][id] = dict(zip(fieldNames, [None]*len(fieldNames)))
 
         self.extract = Extract(self.extractAttrs)
+        self.outputLevel = max(list(self.extractAttrs.keys()))
 
         for key, value in self.regExConfig.items():
             self.regExCompile[key] = [re.compile(x) for x in value['rules']]
@@ -65,6 +66,7 @@ class Workbench:
 
         if '__end__' in self.flowChart[self.lastState]:
             if self.lastLevel == self.outputLevel: self.outputDst.put(self.extract.extracted)
+            msg = 'input properly finished in end state'
         else:
             msg = 'input not complete'
         self.inputSrc.close()
