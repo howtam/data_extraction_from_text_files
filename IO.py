@@ -73,7 +73,7 @@ class OutputBase:
     def close(self):
         pass
 
-    def put(self, extractDict):
+    def put(self, extractDict, inputFileName=None, lineNum=None):
         return True
 
 class CsvOutput(OutputBase):
@@ -88,7 +88,7 @@ class CsvOutput(OutputBase):
     def close(self):
         self.df.to_csv(self.path, sep=',', index=False)
 
-    def put(self, extractDict):
+    def put(self, extractDict, inputFileName=None, lineNum=None):
         if self.df is None:
             self.df = pd.DataFrame(columns=list(extractDict.keys()), dtype=str) 
         self.df.loc[len(self.df)]=(list(extractDict.values()))
@@ -96,7 +96,7 @@ class CsvOutput(OutputBase):
 
       
 class StdOutput(OutputBase):
-    def put(self, extractDict):
+    def put(self, extractDict, inputFileName=None, lineNum=None):
         print(extractDict)
         return True
 
@@ -118,7 +118,7 @@ class DictOutput(OutputBase):
         self.file.write(']\n')
         self.file.close()
 
-    def put(self, extractDict):
+    def put(self, extractDict, inputFileName=None, lineNum=None):
         try:
             self.file.write(str(extractDict)+',\n')
             return True

@@ -10,9 +10,9 @@ class Workbench:
         self.flowChart = flowChart
         self.lastState = '__start__'
         self.lastLevel = 0
-
+        self.lastLineNum = 0   # Use this as part of output if needed
         self.outputItems = []
-        self.lineNum = 0
+        self.lineNum = 0       # Internal use only not for output
         self.regExCompile = {}
 
         self.extractAttrs = {}
@@ -59,6 +59,7 @@ class Workbench:
                 self.extract.storeExtracted(keys, values)
                 self.lastState = match
                 self.lastLevel = thisLevel
+                self.lastLineNum = self.lineNum
             else:  # not following flowchart
                 return f"line {self.lineNum} is {match} which does not follow {self.lastState}"
                     
