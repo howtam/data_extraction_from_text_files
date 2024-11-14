@@ -44,14 +44,14 @@ class Workbench:
                 thisLevel = self.regExConfig[match]['usage']['id'] // 100
                 if thisLevel == self.outputLevel:
                     if match in self.outputItems:
-                        self.outputDst.put(self.extract.extracted)
+                        self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
                         self.outputItems = []
                         self.extract.resetExtract(level=thisLevel)
                     self.outputItems += [match]
                 if thisLevel < self.lastLevel:
                     # print('level coming down')
                     if self.lastLevel == self.outputLevel: 
-                        self.outputDst.put(self.extract.extracted)
+                        self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
                         self.outputItems = []
                     self.extract.resetExtract(level=thisLevel)
                             
@@ -66,7 +66,7 @@ class Workbench:
             line, match, msg = self.findUsefulEntry() 
 
         if '__end__' in self.flowChart[self.lastState]:
-            if self.lastLevel == self.outputLevel: self.outputDst.put(self.extract.extracted)
+            if self.lastLevel == self.outputLevel: self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
             msg = 'input properly finished in end state'
         else:
             msg = 'input not complete'
