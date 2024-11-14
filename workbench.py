@@ -1,13 +1,16 @@
 from IO import *
+from extracter import *
 from sample_profile import *
 
 class Workbench:
     
-    def __init__(self, inputSrc, outputDst, regExConfig, flowChart):
+    def __init__(self, inputSrc, outputDst, regExConfig, flowChart, outputLevels):
         self.inputSrc = inputSrc
         self.outputDst = outputDst
         self.regExConfig = regExConfig
         self.flowChart = flowChart
+        self.outputLevels = outputLevels
+        self.outputLevelNow = -1
         self.lastState = '__start__'
         self.lastLevel = 0
         self.lastLineNum = 0   # Use this as part of output if needed
@@ -25,8 +28,9 @@ class Workbench:
                     self.extractAttrs[lvl] = {}
                 self.extractAttrs[lvl][id] = dict(zip(fieldNames, [None]*len(fieldNames)))
 
+        # print(str(self.extractAttrs))
+        
         self.extract = Extract(self.extractAttrs)
-        self.outputLevel = max(list(self.extractAttrs.keys()))
 
         for key, value in self.regExConfig.items():
             self.regExCompile[key] = [re.compile(x) for x in value['rules']]
@@ -42,17 +46,22 @@ class Workbench:
             if match in self.flowChart[self.lastState]:
                 # print(f" {match} in {self.flowChart[self.lastState]}")   
                 thisLevel = self.regExConfig[match]['usage']['id'] // 100
-                if thisLevel == self.outputLevel:
-                    if match in self.outputItems:
+                # print(f"id  {self.regExConfig[match]['usage']['id']}")
+                if thisLevel in self.outputLevels:
+                    # print(f"In print group")
+                    if (self.outputLevelNow > -1 and thisLevel != self.outputLevelNow) or match in self.outputItems:
+                        # print(f"{(self.outputLevelNow > -1 and thisLevel != self.outputLevelNow)} or {match in self.outputItems}")
                         self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
                         self.outputItems = []
-                        self.extract.resetExtract(level=thisLevel)
+                        self.extract.resetExtract(level=min(self.outputLevels))
+                    self.outputLevelNow = thisLevel
                     self.outputItems += [match]
-                if thisLevel < self.lastLevel:
+                elif thisLevel < self.lastLevel:
                     # print('level coming down')
-                    if self.lastLevel == self.outputLevel: 
+                    if self.lastLevel in self.outputLevels: 
                         self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
                         self.outputItems = []
+
                     self.extract.resetExtract(level=thisLevel)
                             
                 (keys, values) = self.regExConfig[match]['usage']['parser'].run(line)
@@ -66,7 +75,7 @@ class Workbench:
             line, match, msg = self.findUsefulEntry() 
 
         if '__end__' in self.flowChart[self.lastState]:
-            if self.lastLevel == self.outputLevel: self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
+            if self.lastLevel in self.outputLevels: self.outputDst.put(self.extract.extracted, self.inputSrc.path, self.lastLineNum)
             msg = 'input properly finished in end state'
         else:
             msg = 'input not complete'
@@ -93,12 +102,6 @@ class Workbench:
                 return line, matches[0], None
             line = self.advanceOneLine()
         return None, None, "end of file reached"
-
-    def findFirstEntry(self):
-        line, match, msg = self.findUsefulEntry()
-        if msg is None: 
-            if match not in self.flowChart['__start__']: msg = f"line: \"{line}\" at {self.lineNum} is not starting state"
-        return line, match, msg 
         
     def advanceOneLine(self):
         line = self.inputSrc.getOneLine()
@@ -107,8 +110,3 @@ class Workbench:
         if line is not None:
             self.lineNum += 1
         return line
-
-
-wb = Workbench(TextInput('parser_input.txt'), StdOutput(), regExConfig, flowChart)
-wb.run()
-             
